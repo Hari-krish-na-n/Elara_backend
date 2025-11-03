@@ -10,7 +10,7 @@ const mime = require('mime-types');
 
 // Config
 const PORT = process.env.PORT || 3000;
-const VITE_DEV = process.env.VITE_DEV_ORIGIN || 'http://localhttps://elara-backend-up86.onrender.comhost:5173';
+const VITE_DEV = process.env.VITE_DEV_ORIGIN || 'https://elara-backend-up86.onrender.com';
 const DB_PATH = path.join(__dirname, 'db.json');
 
 // Middleware
@@ -101,3 +101,4 @@ app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
   console.log(`CORS allowed from ${VITE_DEV}`);
 });
+
