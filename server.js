@@ -10,7 +10,7 @@ const mime = require('mime-types');
 
 // Config
 const PORT = process.env.PORT || 3000;
-const VITE_DEV = process.env.VITE_DEV_ORIGIN || 'http://localhost:5173';
+const VITE_DEV = process.env.VITE_DEV_ORIGIN || 'http://localhttps://elara-backend-up86.onrender.comhost:5173';
 const DB_PATH = path.join(__dirname, 'db.json');
 
 // Middleware
