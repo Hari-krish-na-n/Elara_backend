@@ -3,24 +3,45 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const app = express();
 const multer = require('multer');
 const mm = require('music-metadata');
 const mime = require('mime-types');
 
-// Config
-const PORT = process.env.PORT || 3000;
-const VITE_DEV = process.env.VITE_DEV_ORIGIN || 'https://elara-backend-up86.onrender.com';
-const DB_PATH = path.join(__dirname, 'db.json');
+const app = express();
 
-// Middleware
-app.use(cors({ origin: [VITE_DEV, /http:\/\/localhost:\d+/], credentials: false }));
-app.use(express.json());
+// =====================
+// Config
+// =====================
+const PORT = process.env.PORT || 3000;
+const FRONTEND_URLS = [
+  'https://elara-frontend.vercel.app', // deployed frontend
+  'http://localhost:5173',             // local development
+];
+
+const DB_PATH = path.join(__dirname, 'db.json');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+// =====================
+// Middleware
+// =====================
+app.use(cors({
+  origin: FRONTEND_URLS,
+  credentials: true
+}));
+
+app.use(express.json());
+
+// Ensure uploads folder exists
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Serve uploaded images
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// =====================
 // Simple JSON file DB
+// =====================
 function readDb() {
   try {
     const raw = fs.readFileSync(DB_PATH, 'utf-8');
@@ -29,25 +50,39 @@ function readDb() {
     return { plays: {} };
   }
 }
+
 function writeDb(db) {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
-// Health
-app.get('/health', (_req, res) => res.json({ ok: true }));
+// =====================
+// Health Check
+// =====================
+app.get('/health', (_req, res) => {
+  res.json({ ok: true });
+});
 
+// =====================
 // Metadata API
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
+// =====================
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 200 * 1024 * 1024 } // 200 MB
+});
+
 app.post('/api/metadata', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'file is required' });
+
     const { buffer, mimetype, size, originalname } = req.file;
-const meta = await mm.parseBuffer(buffer, { mimeType: mimetype, size });
+    const meta = await mm.parseBuffer(buffer, { mimeType: mimetype, size });
     const common = meta.common || {};
     const format = meta.format || {};
 
+    // Handle cover image
     let coverUrl = null;
     const pic = (common.picture && common.picture[0]) || null;
+
     if (pic && pic.data) {
       const ext = mime.extension(pic.format || 'image/jpeg') || 'jpg';
       const fileName = `cover-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
@@ -70,7 +105,9 @@ const meta = await mm.parseBuffer(buffer, { mimeType: mimetype, size });
   }
 });
 
-// Plays API // good
+// =====================
+// Plays API
+// =====================
 app.get('/api/plays', (_req, res) => {
   const db = readDb();
   res.json(db.plays || {});
@@ -88,7 +125,9 @@ app.post('/api/plays/:id', (req, res) => {
 app.put('/api/plays/:id', (req, res) => {
   const { id } = req.params;
   const { count } = req.body || {};
-  if (typeof count !== 'number' || count < 0) return res.status(400).json({ error: 'count must be >= 0' });
+  if (typeof count !== 'number' || count < 0) {
+    return res.status(400).json({ error: 'count must be >= 0' });
+  }
   const db = readDb();
   db.plays = db.plays || {};
   db.plays[id] = count;
@@ -96,9 +135,10 @@ app.put('/api/plays/:id', (req, res) => {
   res.json({ id, count });
 });
 
-// Start
+// =====================
+// Start Server
+// =====================
 app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-  console.log(`CORS allowed from ${VITE_DEV}`);
+  console.log(`✅ Backend running on http://localhost:${PORT}`);
+  console.log(`🌐 CORS allowed from: ${FRONTEND_URLS.join(', ')}`);
 });
-
