@@ -106,6 +106,59 @@ app.post('/api/metadata', upload.single('file'), async (req, res) => {
 });
 
 // =====================
+// Path-based scan with caching (desktop/local backend)
+// =====================
+app.post('/api/scan-paths', async (req, res) => {
+  try {
+    const { paths } = req.body || {};
+    if (!Array.isArray(paths) || paths.length === 0) return res.status(400).json({ error: 'paths[] required' });
+
+    const db = readDb();
+    db.metadata = db.metadata || {};
+    const results = [];
+
+    for (const p of paths) {
+      try {
+        const stat = fs.statSync(p);
+        const cached = db.metadata[p];
+        if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+          results.push({ path: p, ...cached.meta });
+          continue;
+        }
+        const meta = await mm.parseFile(p);
+        const common = meta.common || {};
+        const format = meta.format || {};
+        let coverUrl = null;
+        const pic = (common.picture && common.picture[0]) || null;
+        if (pic && pic.data) {
+          const ext = mime.extension(pic.format || 'image/jpeg') || 'jpg';
+          const fileName = `cover-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const outPath = path.join(UPLOADS_DIR, fileName);
+          fs.writeFileSync(outPath, pic.data);
+          coverUrl = `/uploads/${fileName}`;
+        }
+        const metaLite = {
+          title: common.title || path.parse(p).name,
+          artist: common.artist || 'Unknown',
+          album: common.album || 'Unknown',
+          duration: typeof format.duration === 'number' ? format.duration : null,
+          coverUrl
+        };
+        db.metadata[p] = { mtimeMs: stat.mtimeMs, size: stat.size, meta: metaLite };
+        results.push({ path: p, ...metaLite });
+      } catch (err) {
+        results.push({ path: p, error: 'unreadable' });
+      }
+    }
+    writeDb(db);
+    res.json({ items: results });
+  } catch (e) {
+    console.error('scan-paths error', e);
+    res.status(500).json({ error: 'scan_failed' });
+  }
+});
+
+// =====================
 // Plays API
 // =====================
 app.get('/api/plays', (_req, res) => {
