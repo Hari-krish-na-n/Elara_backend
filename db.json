@@ -1,4 +1,11 @@
 {
+  "seq": {
+    "track": 0,
+    "playlist": 0
+  },
+  "tracks": [],
+  "playlists": [],
+  "playlistTracks": [],
   "plays": {
     "blob:http://localhost:5173/ff9f59c8-73ff-4600-94b1-cd738ee0c4d4": 1,
     "blob:http://localhost:5173/0c40dda5-0448-401e-a849-e979095aa87a": 1,
@@ -41,5 +48,7 @@
     "blob:http://localhost:5173/8f890016-d3e2-4cdc-8990-bd23b433c9bc": 1,
     "blob:http://localhost:5173/852c4ce5-50b5-48b6-a772-cacf66e6ce99": 1,
     "blob:http://localhost:5173/972c6b55-fb33-450e-b806-da59645f34a5": 1
-  }
+  },
+  "likes": {},
+  "metadata": {}
 }
