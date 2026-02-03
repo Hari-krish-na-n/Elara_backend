@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elara Music API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        button { padding: 8px 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        .songs-list { margin-top: 20px; }
+        .song-item { background: white; padding: 10px; margin: 5px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Elara Music API Test</h1>
+        
+        <div class="form">
+            <h3>Add New Song</h3>
+            <input id="title" placeholder="Song Title">
+            <input id="artist" placeholder="Artist">
+            <input id="duration" type="number" placeholder="Duration (seconds)">
+            <button onclick="addSong()">Add Song</button>
+        </div>
+
+        <div>
+            <button onclick="loadSongs()">Load Songs</button>
+            <button onclick="clearSongs()">Clear All</button>
+        </div>
+
+        <div class="songs-list" id="songsList"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api/songs';
+
+        async function loadSongs() {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            displaySongs(data.songs);
+        }
+
+        async function addSong() {
+            const song = {
+                title: document.getElementById('title').value,
+                artist: document.getElementById('artist').value,
+                duration: parseInt(document.getElementById('duration').value)
+            };
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(song)
+            });
+
+            if (response.ok) {
+                alert('Song added!');
+                loadSongs();
+                clearForm();
+            }
+        }
+
+        function displaySongs(songs) {
+            const container = document.getElementById('songsList');
+            container.innerHTML = '<h3>Songs (' + songs.length + '):</h3>';
+            
+            songs.forEach(song => {
+                const div = document.createElement('div');
+                div.className = 'song-item';
+                div.innerHTML = `
+                    <strong>${song.title}</strong> - ${song.artist}
+                    <br><small>Duration: ${song.duration}s | Added: ${new Date(song.addedDate).toLocaleDateString()}</small>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('title').value = '';
+            document.getElementById('artist').value = '';
+            document.getElementById('duration').value = '';
+        }
+
+        async function clearSongs() {
+            if (confirm('Delete all songs?')) {
+                const songs = await (await fetch(API_URL)).json();
+                // Note: You'll need to implement delete endpoint first
+                alert('Delete endpoint not implemented yet');
+            }
+        }
+
+        // Load songs on page load
+        loadSongs();
+    </script>
+</body>
+</html>
